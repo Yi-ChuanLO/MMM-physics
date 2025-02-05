@@ -58,7 +58,7 @@
 !!
  subroutine mp_wsm6_effectRad_run(do_microp_re,t,qc,qi,qs,rho,qmin,t0c,re_qc_bg,re_qi_bg,re_qs_bg, &
                                   re_qc_max,re_qi_max,re_qs_max,re_qc,re_qi,re_qs,its,ite,kts,kte, &
-                                  errmsg,errflg)
+                                  errmsg,errflg,cache_blocksize)
 !=================================================================================================================
 !  Compute radiation effective radii of cloud water, ice, and snow for
 !  single-moment microphysics.
@@ -71,7 +71,7 @@
 
 !..Sub arguments
  logical,intent(in):: do_microp_re
- integer,intent(in):: its,ite,kts,kte
+ integer,intent(in):: its,ite,kts,kte,cache_blocksize
  real(kind=kind_phys),intent(in):: qmin
  real(kind=kind_phys),intent(in):: t0c
  real(kind=kind_phys),intent(in):: re_qc_bg,re_qi_bg,re_qs_bg
@@ -110,82 +110,111 @@
  real(kind=kind_phys),parameter:: obmr = 1.0/bm_r
  real(kind=kind_phys),parameter:: nc0  = 3.E8
 
+!..Cache block size
+ integer :: iblock, ib, ie, idim
+
 !-----------------------------------------------------------------------------------------------------------------
 
  if(.not. do_microp_re) return
 
+ idim = ite - its + 1
+
 !--- initialization of effective radii of cloud water, cloud ice, and snow to background values:
- do k = kts,kte
-   do i = its,ite
-      re_qc(i,k) = re_qc_bg
-      re_qi(i,k) = re_qi_bg
-      re_qs(i,k) = re_qs_bg
+ do iblock = 1, idim, cache_blocksize
+   ib = its + iblock - 1
+   ie = min(ite, ib + cache_blocksize - 1)
+   do k = kts,kte
+     do i = ib,ie
+       re_qc(i,k) = re_qc_bg
+       re_qi(i,k) = re_qi_bg
+       re_qs(i,k) = re_qs_bg
+     enddo
    enddo
- enddo
+ enddo  
 
 !--- computation of effective radii:
  has_qc = .false.
  has_qi = .false.
  has_qs = .false.
 
- do k = kts,kte
-   do i = its,ite
-     ! for cloud
-     rqc(i,k) = max(R1,qc(i,k)*rho(i,k))
-     if (rqc(i,k).gt.R1) has_qc = .true.
-     ! for ice
-     rqi(i,k) = max(R1,qi(i,k)*rho(i,k))
-     temp = (rho(i,k)*max(qi(i,k),qmin))
-     temp = sqrt(sqrt(temp*temp*temp))
-     ni(i,k) = min(max(5.38e7*temp,1.e3),1.e6)
-     rni(i,k)= max(R2,ni(i,k)*rho(i,k))
-     if (rqi(i,k).gt.R1 .and. rni(i,k).gt.R2) has_qi = .true.
-     ! for snow
-     rqs(i,k) = max(R1,qs(i,k)*rho(i,k))
-     if (rqs(i,k).gt.R1) has_qs = .true.
-   enddo
- enddo
-
- if (has_qc) then
+ do iblock = 1, idim, cache_blocksize
+   ib = its + iblock - 1
+   ie = min(ite, ib + cache_blocksize - 1)
    do k = kts,kte
-     do i = its,ite
-       if (rqc(i,k).le.R1) CYCLE
-       lamdac = (pidnc*nc0/rqc(i,k))**obmr
-       re_qc(i,k) =  max(2.51E-6,min(1.5*(1.0/lamdac),re_qc_max))
+     do i = ib,ie
+       ! for cloud
+       rqc(i,k) = max(R1,qc(i,k)*rho(i,k))
+       if (rqc(i,k).gt.R1) has_qc = .true.
+       ! for ice
+       rqi(i,k) = max(R1,qi(i,k)*rho(i,k))
+       temp = (rho(i,k)*max(qi(i,k),qmin))
+       temp = sqrt(sqrt(temp*temp*temp))
+       ni(i,k) = min(max(5.38e7*temp,1.e3),1.e6)
+       rni(i,k)= max(R2,ni(i,k)*rho(i,k))
+       if (rqi(i,k).gt.R1 .and. rni(i,k).gt.R2) has_qi = .true.
+       ! for snow
+       rqs(i,k) = max(R1,qs(i,k)*rho(i,k))
+       if (rqs(i,k).gt.R1) has_qs = .true.
      enddo
    enddo
+ enddo  
+
+ if (has_qc) then
+   do iblock = 1, idim, cache_blocksize
+     ib = its + iblock - 1
+     ie = min(ite, ib + cache_blocksize - 1)
+     do k = kts,kte
+       do i = ib,ie
+         if (rqc(i,k).le.R1) CYCLE
+         lamdac = (pidnc*nc0/rqc(i,k))**obmr
+         re_qc(i,k) =  max(2.51E-6,min(1.5*(1.0/lamdac),re_qc_max))
+       enddo
+     enddo
+   enddo  
  endif
 
  if (has_qi) then
-   do k = kts,kte
-     do i = its,ite
-       if (rqi(i,k).le.R1 .or. rni(i,k).le.R2) CYCLE
-       diai = 11.9*sqrt(rqi(i,k)/ni(i,k))
-       re_qi(i,k) = max(10.01E-6,min(0.75*0.163*diai,re_qi_max))
+   do iblock = 1, idim, cache_blocksize
+     ib = its + iblock - 1
+     ie = min(ite, ib + cache_blocksize - 1)
+     do k = kts,kte
+       do i = ib,ie
+         if (rqi(i,k).le.R1 .or. rni(i,k).le.R2) CYCLE
+         diai = 11.9*sqrt(rqi(i,k)/ni(i,k))
+         re_qi(i,k) = max(10.01E-6,min(0.75*0.163*diai,re_qi_max))
+       enddo
      enddo
-   enddo
+   enddo  
  endif
 
  if (has_qs) then
-   do i = its,ite
+   do iblock = 1, idim, cache_blocksize
+     ib = its + iblock - 1
+     ie = min(ite, ib + cache_blocksize - 1)
      do k = kts,kte
-       if (rqs(i,k).le.R1) CYCLE
-       supcol = t0c-t(i,k)
-       n0sfac = max(min(exp(alpha*supcol),n0smax/n0s),1.)
-       lamdas = sqrt(sqrt(pidn0s*n0sfac/rqs(i,k)))
-       re_qs(i,k) = max(25.E-6,min(0.5*(1./lamdas),re_qs_max))
+       do i = ib,ie
+         if (rqs(i,k).le.R1) CYCLE
+         supcol = t0c-t(i,k)
+         n0sfac = max(min(exp(alpha*supcol),n0smax/n0s),1.)
+         lamdas = sqrt(sqrt(pidn0s*n0sfac/rqs(i,k)))
+         re_qs(i,k) = max(25.E-6,min(0.5*(1./lamdas),re_qs_max))
+       enddo
      enddo
-   enddo
+   enddo  
  endif
 
 !--- limit effective radii of cloud water, cloud ice, and snow to maximum values:
- do k = kts,kte
-   do i = its,ite
-      re_qc(i,k) = max(re_qc_bg,min(re_qc(i,k),re_qc_max))
-      re_qi(i,k) = max(re_qi_bg,min(re_qi(i,k),re_qi_max))
-      re_qs(i,k) = max(re_qs_bg,min(re_qs(i,k),re_qs_max))
+ do iblock = 1, idim, cache_blocksize
+   ib = its + iblock - 1
+   ie = min(ite, ib + cache_blocksize - 1)
+   do k = kts,kte
+     do i = ib,ie
+       re_qc(i,k) = max(re_qc_bg,min(re_qc(i,k),re_qc_max))
+       re_qi(i,k) = max(re_qi_bg,min(re_qi(i,k),re_qi_max))
+       re_qs(i,k) = max(re_qs_bg,min(re_qs(i,k),re_qs_max))
+     enddo
    enddo
- enddo
+ enddo  
 
  errmsg = 'mp_wsm6_effectRad_run OK'
  errflg = 0
