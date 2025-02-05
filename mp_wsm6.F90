@@ -1628,12 +1628,13 @@
  integer:: iblock,ib,ie,idim
 
 !-----------------------------------------------------------------------------------------------------------------
- idim = ite-its+1
 !size distributions: (x=mixing ratio, y=air density):
 !valid for mixing ratio > 1.e-9 kg/kg.
  lamdar(x,y)=   sqrt(sqrt(pidn0r/(x*y)))      ! (pidn0r/(x*y))**.25
  lamdas(x,y,z)= sqrt(sqrt(pidn0s*z/(x*y)))    ! (pidn0s*z/(x*y))**.25
  lamdag(x,y)=   sqrt(sqrt(pidn0g/(x*y)))      ! (pidn0g/(x*y))**.25
+
+ idim = ite-its+1
 
  do iblock = 1, idim, cache_blocksize
    ib = its + (iblock-1)
