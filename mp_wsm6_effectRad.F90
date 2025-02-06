@@ -110,19 +110,16 @@
  real(kind=kind_phys),parameter:: obmr = 1.0/bm_r
  real(kind=kind_phys),parameter:: nc0  = 3.E8
 
-!..Cache block size
- integer :: iblock, ib, ie, idim
+!..Cache block
+ integer :: ib, ie
 
 !-----------------------------------------------------------------------------------------------------------------
 
  if(.not. do_microp_re) return
 
- idim = ite - its + 1
-
 !--- initialization of effective radii of cloud water, cloud ice, and snow to background values:
- do iblock = 1, idim, cache_blocksize
-   ib = its + iblock - 1
-   ie = min(ite, ib + cache_blocksize - 1)
+ do ib = its, ite, cache_blocksize
+   ie = min(ib+cache_blocksize-1,ite)
    do k = kts,kte
      do i = ib,ie
        re_qc(i,k) = re_qc_bg
@@ -137,9 +134,8 @@
  has_qi = .false.
  has_qs = .false.
 
- do iblock = 1, idim, cache_blocksize
-   ib = its + iblock - 1
-   ie = min(ite, ib + cache_blocksize - 1)
+ do ib = its, ite, cache_blocksize
+   ie = min(ib+cache_blocksize-1,ite)
    do k = kts,kte
      do i = ib,ie
        ! for cloud
@@ -160,9 +156,8 @@
  enddo  
 
  if (has_qc) then
-   do iblock = 1, idim, cache_blocksize
-     ib = its + iblock - 1
-     ie = min(ite, ib + cache_blocksize - 1)
+   do ib = its, ite, cache_blocksize
+     ie = min(ib+cache_blocksize-1,ite)
      do k = kts,kte
        do i = ib,ie
          if (rqc(i,k).le.R1) CYCLE
@@ -174,9 +169,8 @@
  endif
 
  if (has_qi) then
-   do iblock = 1, idim, cache_blocksize
-     ib = its + iblock - 1
-     ie = min(ite, ib + cache_blocksize - 1)
+   do ib = its, ite, cache_blocksize
+     ie = min(ib+cache_blocksize-1,ite)
      do k = kts,kte
        do i = ib,ie
          if (rqi(i,k).le.R1 .or. rni(i,k).le.R2) CYCLE
@@ -188,9 +182,8 @@
  endif
 
  if (has_qs) then
-   do iblock = 1, idim, cache_blocksize
-     ib = its + iblock - 1
-     ie = min(ite, ib + cache_blocksize - 1)
+   do ib = its, ite, cache_blocksize
+     ie = min(ib+cache_blocksize-1,ite)
      do k = kts,kte
        do i = ib,ie
          if (rqs(i,k).le.R1) CYCLE
@@ -204,9 +197,8 @@
  endif
 
 !--- limit effective radii of cloud water, cloud ice, and snow to maximum values:
- do iblock = 1, idim, cache_blocksize
-   ib = its + iblock - 1
-   ie = min(ite, ib + cache_blocksize - 1)
+ do ib = its, ite, cache_blocksize
+   ie = min(ib+cache_blocksize-1,ite)
    do k = kts,kte
      do i = ib,ie
        re_qc(i,k) = max(re_qc_bg,min(re_qc(i,k),re_qc_max))

@@ -413,7 +413,7 @@
   real(kind=kind_phys):: temp
 
 ! cache blocking
-  integer:: ib,ie,iblock
+  integer:: ib, ie
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -452,16 +452,15 @@
 ! latent heat for phase changes and heat capacity. neglect the
 ! changes during microphysical process calculation emanuel(1994)
 !
- do iblock = 1, idim, cache_blocksize
-   ib = its + (iblock-1)
+ do ib = its, ite, cache_blocksize
    ie = min(ib+cache_blocksize-1,ite)
    do k = kts, kte
-     do i = ib, ie
-       cpm(i,k) = cpmcal(q(i,k))
-       xl(i,k) = xlcal(t(i,k))
-       delz_tmp(i,k) = delz(i,k)
-       den_tmp(i,k) = den(i,k)
-     enddo
+   do i = ib, ie
+     cpm(i,k) = cpmcal(q(i,k))
+     xl(i,k) = xlcal(t(i,k))
+     delz_tmp(i,k) = delz(i,k)
+     den_tmp(i,k) = den(i,k)
+   enddo
    enddo
  enddo
 !
@@ -504,9 +503,9 @@
      flgcld(i) = .true.
    enddo
 
-  do k = kts, kte 
-      denfac(its:ite,k) = sqrt(den0/den(its:ite,k))
-  enddo
+   do k = kts, kte 
+     denfac(its:ite,k) = sqrt(den0/den(its:ite,k))
+   enddo
 !   do k = kts, kte
 !     do i = its,ite
 !       dvec1(i) = den(i,k)
@@ -534,8 +533,7 @@
    dldti=cvap-cice
    xai=-dldti/rv
    xbi=xai+hsub/(rv*ttp)
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -606,8 +604,7 @@
 !-------------------------------------------------------------
 ! Ni: ice crystal number concentraiton   [HDC 5c]
 !-------------------------------------------------------------
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -623,8 +620,7 @@
 ! compute the fallout term:
 ! first, vertical terminal velosity for minor loops
 !----------------------------------------------------------------
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -637,8 +633,7 @@
    call slope_wsm6(qrs_tmp,den_tmp,denfac,t,rslope,rslopeb,rslope2,rslope3, &
                    work1,its,ite,kts,kte,cache_blocksize)
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kte, kts, -1
      do i = ib, ie
@@ -662,8 +657,7 @@
                         delqrs1,dtcld,1,1)
    call nislfv_rain_plm6(idim,kdim,den_tmp,denfac,t,delz_tmp,worka,         &
                          denqrs2,denqrs3,delqrs2,delqrs3,dtcld,1,1)
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -683,8 +677,7 @@
      fall(i,1,3) = delqrs3(i)/delz(i,1)/dtcld
    enddo
 
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -697,8 +690,7 @@
    call slope_wsm6(qrs_tmp,den_tmp,denfac,t,rslope,rslopeb,rslope2,rslope3, &
                    work1,its,ite,kts,kte,cache_blocksize)
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kte, kts, -1
      do i = ib, ie
@@ -744,8 +736,7 @@
 !---------------------------------------------------------------
 ! Vice [ms-1] : fallout of ice crystal [HDC 5a]
 !---------------------------------------------------------------
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kte, kts, -1
      do i = ib, ie
@@ -756,24 +747,16 @@
          diameter  = max(min(dicon * sqrt(xmi),dimax), 1.e-25)
          work1c(i,k) = 1.49e4*exp(log(diameter)*(1.31))
        endif
-     enddo
-     enddo
-   enddo
 !
 !  forward semi-laglangian scheme (JH), PCM (piecewise constant),  (linear)
 !
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kte, kts, -1
-     do i = ib, ie
        denqci(i,k) = den(i,k)*qi(i,k)
      enddo
      enddo
    enddo
    call nislfv_rain_plm(idim,kdim,den_tmp,denfac,t,delz_tmp,work1c,denqci,  &
                         delqi,dtcld,1,0)
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -825,8 +808,7 @@
 ! pimlt: instantaneous melting of cloud ice [HL A47] [RH83 A28]
 !       (T>T0: I->C)
 !---------------------------------------------------------------
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -887,8 +869,7 @@
 !----------------------------------------------------------------
 ! update the slope parameters for microphysics computation
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -906,17 +887,13 @@
 !        (ry88, y93, h85)
 ! work2: parameter associated with the ventilation effects(y93)
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
        work1(i,k,1) = diffac(xl(i,k),p(i,k),t(i,k),den(i,k),qsat(i,k,1))
        work1(i,k,2) = diffac(xls,p(i,k),t(i,k),den(i,k),qsat(i,k,2))
        work2(i,k) = venfac(p(i,k),t(i,k),den(i,k))
-     enddo
-     enddo
-   enddo
 !
 !===============================================================
 !
@@ -926,11 +903,6 @@
 !
 !===============================================================
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kts, kte
-     do i = ib, ie
        supsat = max(q(i,k),qmin)-qsat(i,k,1)
        satdt = supsat/dtcld
 !---------------------------------------------------------------
@@ -981,8 +953,7 @@
 !
 !===============================================================
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -1270,8 +1241,7 @@
 !     check mass conservation of generation terms and feedback to the
 !     large scale
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -1473,8 +1443,7 @@
    dldti=cvap-cice
    xai=-dldti/rv
    xbi=xai+hsub/(rv*ttp)
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -1501,8 +1470,7 @@
 ! if there exists additional water vapor condensated/if
 ! evaporation of cloud water is not enough to remove subsaturation
 !
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -1527,8 +1495,7 @@
  enddo                  ! big loops
 
  if(present(rainprod2d) .and. present(evapprod2d)) then
-   do iblock = 1, idim, cache_blocksize
-     ib = its + (iblock-1)
+   do ib = its, ite, cache_blocksize
      ie = min(ib+cache_blocksize-1,ite)
      do k = kts, kte
      do i = ib, ie
@@ -1625,7 +1592,7 @@
  real(kind=kind_phys),dimension(its:ite,kts:kte):: n0sfac
 
 !--- cache block
- integer:: iblock,ib,ie,idim
+ integer:: ib, ie
 
 !-----------------------------------------------------------------------------------------------------------------
 !size distributions: (x=mixing ratio, y=air density):
@@ -1634,10 +1601,8 @@
  lamdas(x,y,z)= sqrt(sqrt(pidn0s*z/(x*y)))    ! (pidn0s*z/(x*y))**.25
  lamdag(x,y)=   sqrt(sqrt(pidn0g/(x*y)))      ! (pidn0g/(x*y))**.25
 
- idim = ite-its+1
 
- do iblock = 1, idim, cache_blocksize
-   ib = its + (iblock-1)
+ do ib = its, ite, cache_blocksize
    ie = min(ib+cache_blocksize-1,ite)
    do k = kts, kte
    do i = ib, ie
