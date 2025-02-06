@@ -611,19 +611,19 @@
        temp = (den(i,k)*max(qi(i,k),qmin))
        temp = sqrt(sqrt(temp*temp*temp))
        xni(i,k) = min(max(5.38e7*temp,1.e3),1.e6)
-     enddo
-     enddo
-   end do  
+!    enddo
+!    enddo
+!  end do  
 
 !
 !----------------------------------------------------------------
 ! compute the fallout term:
 ! first, vertical terminal velosity for minor loops
 !----------------------------------------------------------------
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kts, kte
-     do i = ib, ie
+!  do ib = its, ite, cache_blocksize
+!    ie = min(ib+cache_blocksize-1,ite)
+!    do k = kts, kte
+!    do i = ib, ie
        qrs_tmp(i,k,1) = qr(i,k)
        qrs_tmp(i,k,2) = qs(i,k)
        qrs_tmp(i,k,3) = qg(i,k)
@@ -730,16 +730,16 @@
            t(i,k) = t(i,k) + xlf/cpm(i,k)*pgmlt(i,k)
          endif
        endif
-     enddo
-     enddo
-   enddo
+!    enddo
+!    enddo
+!  enddo
 !---------------------------------------------------------------
 ! Vice [ms-1] : fallout of ice crystal [HDC 5a]
 !---------------------------------------------------------------
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kte, kts, -1
-     do i = ib, ie
+!  do ib = its, ite, cache_blocksize
+!    ie = min(ib+cache_blocksize-1,ite)
+!    do k = kte, kts, -1
+!    do i = ib, ie
        if(qi(i,k).le.0.) then
          work1c(i,k) = 0.
        else
@@ -861,18 +861,18 @@
          t(i,k) = t(i,k) + xlf/cpm(i,k)*pfrzdtr
          qr(i,k) = qr(i,k)-pfrzdtr
        endif
-     enddo
-     enddo
-   enddo
+!    enddo
+!    enddo
+!  enddo
 !
 !
 !----------------------------------------------------------------
 ! update the slope parameters for microphysics computation
 !
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kts, kte
-     do i = ib, ie
+!  do ib = its, ite, cache_blocksize
+!    ie = min(ib+cache_blocksize-1,ite)
+!    do k = kts, kte
+!    do i = ib, ie
        qrs_tmp(i,k,1) = qr(i,k)
        qrs_tmp(i,k,2) = qs(i,k)
        qrs_tmp(i,k,3) = qg(i,k)
@@ -894,6 +894,9 @@
        work1(i,k,1) = diffac(xl(i,k),p(i,k),t(i,k),den(i,k),qsat(i,k,1))
        work1(i,k,2) = diffac(xls,p(i,k),t(i,k),den(i,k),qsat(i,k,2))
        work2(i,k) = venfac(p(i,k),t(i,k),den(i,k))
+     enddo
+     enddo
+   enddo
 !
 !===============================================================
 !
@@ -903,6 +906,10 @@
 !
 !===============================================================
 !
+   do ib = its, ite, cache_blocksize
+     ie = min(ib+cache_blocksize-1,ite)
+     do k = kts, kte
+     do i = ib, ie
        supsat = max(q(i,k),qmin)-qsat(i,k,1)
        satdt = supsat/dtcld
 !---------------------------------------------------------------
@@ -936,9 +943,9 @@
            prevp(i,k) = min(prevp(i,k),satdt/2)
          endif
        endif
-     enddo
-     enddo
-   enddo
+!    enddo
+!    enddo
+!  enddo
 !
 !===============================================================
 !
@@ -953,10 +960,10 @@
 !
 !===============================================================
 !
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kts, kte
-     do i = ib, ie
+!  do ib = its, ite, cache_blocksize
+!    ie = min(ib+cache_blocksize-1,ite)
+!    do k = kts, kte
+!    do i = ib, ie
        supcol = t0c-t(i,k)
        n0sfac(i,k) = max(min(exp(alpha*supcol),n0smax/n0s),1.)
        supsat = max(q(i,k),qmin)-qsat(i,k,2)
@@ -1232,19 +1239,19 @@
            pgevp(i,k) = min(max(pgevp(i,k),-qg(i,k)/dtcld),0.)
          endif
        endif
-     enddo
-     enddo
-   enddo
+!    enddo
+!    enddo
+!  enddo
 !
 !
 !----------------------------------------------------------------
 !     check mass conservation of generation terms and feedback to the
 !     large scale
 !
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kts, kte
-     do i = ib, ie
+!  do ib = its, ite, cache_blocksize
+!    ie = min(ib+cache_blocksize-1,ite)
+!    do k = kts, kte
+!    do i = ib, ie
        delta2=0.
        delta3=0.
        if(qr(i,k).lt.1.e-4.and.qs(i,k).lt.1.e-4) delta2=1.
@@ -1461,19 +1468,19 @@
        qsat(i,k,2) = min(qsat(i,k,2),0.99*p(i,k))
        qsat(i,k,2) = ep2 * qsat(i,k,2) / (p(i,k) - qsat(i,k,2))
        qsat(i,k,2) = max(qsat(i,k,2),qmin)
-     enddo
-     enddo
-   enddo
+!    enddo
+!    enddo
+!  enddo
 !
 !----------------------------------------------------------------
 ! pcond: condensational/evaporational rate of cloud water [HL A46] [RH83 A6]
 ! if there exists additional water vapor condensated/if
 ! evaporation of cloud water is not enough to remove subsaturation
 !
-   do ib = its, ite, cache_blocksize
-     ie = min(ib+cache_blocksize-1,ite)
-     do k = kts, kte
-     do i = ib, ie
+!  do ib = its, ite, cache_blocksize
+!    ie = min(ib+cache_blocksize-1,ite)
+!    do k = kts, kte
+!    do i = ib, ie
        work1(i,k,1) = conden(t(i,k),q(i,k),qsat(i,k,1),xl(i,k),cpm(i,k))
        work2(i,k) = qc(i,k)+work1(i,k,1)
        pcond(i,k) = min(max(work1(i,k,1)/dtcld,0.),max(q(i,k),0.)/dtcld)
